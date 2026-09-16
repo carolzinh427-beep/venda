@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
-  Tractor, LayoutDashboard, Layers, Clock, Heart, ShieldCheck, UserCheck, 
-  Settings, LogOut, Menu, X, ExternalLink, Handshake 
+  Tractor, LayoutDashboard, Layers, Users, Heart, DollarSign, ShieldCheck, 
+  Settings, LogOut, Menu, X, ExternalLink, Search 
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -18,33 +18,54 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   children,
   onNavigatePublic
 }) => {
-  const { settings, logoutAdmin, announcements, interests } = useApp();
+  const { 
+    settings, logoutAdmin, machines, interests, advertisers, 
+    adminGlobalSearch, setAdminGlobalSearch 
+  } = useApp();
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const pendingCount = announcements.filter(a => a.status === 'PENDING').length;
+  const pendingCount = machines.filter(m => m.status === 'PENDING').length;
   const newInterestsCount = interests.filter(i => i.status === 'NEW').length;
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: 'maquinas', label: 'Todas as Máquinas', icon: <Layers className="w-5 h-5" /> },
     { 
-      id: 'pendentes', 
-      label: 'Anúncios Pendentes', 
-      icon: <Clock className="w-5 h-5" />,
+      id: 'machines', 
+      label: 'Máquinas', 
+      icon: <Layers className="w-5 h-5" />,
       badge: pendingCount > 0 ? pendingCount : undefined,
       badgeColor: 'bg-amber-500 text-white'
     },
     { 
-      id: 'interesses', 
+      id: 'advertisers', 
+      label: 'Anunciantes', 
+      icon: <Users className="w-5 h-5" />,
+      badge: advertisers.length > 0 ? advertisers.length : undefined,
+      badgeColor: 'bg-emerald-700 text-white'
+    },
+    { 
+      id: 'interests', 
       label: 'Interesses', 
       icon: <Heart className="w-5 h-5" />,
       badge: newInterestsCount > 0 ? newInterestsCount : undefined,
       badgeColor: 'bg-rose-500 text-white'
     },
-    { id: 'proprias', label: 'Máquinas Próprias', icon: <ShieldCheck className="w-5 h-5" /> },
-    { id: 'terceiros', label: 'Máquinas de Terceiros', icon: <UserCheck className="w-5 h-5" /> },
-    { id: 'agenciamento', label: 'Agenciamento', icon: <Handshake className="w-5 h-5" /> },
-    { id: 'configuracoes', label: 'Configurações', icon: <Settings className="w-5 h-5" /> },
+    { 
+      id: 'vendas', 
+      label: 'Vendas', 
+      icon: <DollarSign className="w-5 h-5" /> 
+    },
+    { 
+      id: 'my-machines', 
+      label: 'Minhas máquinas', 
+      icon: <ShieldCheck className="w-5 h-5" /> 
+    },
+    { 
+      id: 'settings', 
+      label: 'Configurações', 
+      icon: <Settings className="w-5 h-5" /> 
+    },
   ];
 
   const handleSelectTab = (id: string) => {
@@ -65,7 +86,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         <div className="flex items-center gap-2">
           {pendingCount > 0 && (
             <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-              {pendingCount} P
+              {pendingCount} Pendentes
             </span>
           )}
           <button
@@ -84,7 +105,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       `}>
         <div className="space-y-6">
           
-          {/* LOGO */}
+          {/* LOGO BRAND */}
           <div className="flex items-center gap-3 px-2 py-3 border-b border-white/10">
             <div className="w-10 h-10 rounded-xl bg-agro-leaf flex items-center justify-center text-agro-accent border border-emerald-500/30">
               <Tractor className="w-6 h-6" />
@@ -94,12 +115,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                 {settings.company_name}
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                Painel Admin
+                Painel Administrativo
               </span>
             </div>
           </div>
 
-          {/* MENU LIST */}
+          {/* MENU ITEMS */}
           <nav className="space-y-1 text-left">
             {menuItems.map(item => {
               const isActive = activeTab === item.id;
@@ -148,7 +169,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            <span>Sair do Painel</span>
+            <span>Sair</span>
           </button>
         </div>
 
@@ -162,10 +183,43 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         ></div>
       )}
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
-        {children}
-      </main>
+      {/* MAIN CONTENT AREA WITH GLOBAL ADMIN SEARCH BAR */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        {/* TOP ADMIN HEADER BAR WITH GLOBAL SEARCH */}
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+            <input
+              type="text"
+              value={adminGlobalSearch}
+              onChange={(e) => setAdminGlobalSearch(e.target.value)}
+              placeholder="Busca global (máquina, marca, modelo, anunciante, telefone, cidade)..."
+              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-agro-leaf"
+            />
+            {adminGlobalSearch && (
+              <button
+                onClick={() => setAdminGlobalSearch('')}
+                className="absolute right-3 top-2.5 text-xs text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 text-xs">
+            <span className="font-bold text-gray-600 hidden sm:inline">Usuário: <strong className="text-agro-dark">maquinas</strong></span>
+            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full border border-emerald-300">
+              Admin Conectado
+            </span>
+          </div>
+        </header>
+
+        {/* MAIN BODY */}
+        <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
+          {children}
+        </main>
+      </div>
 
     </div>
   );

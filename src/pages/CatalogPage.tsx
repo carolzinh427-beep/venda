@@ -12,11 +12,11 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ onSelectMachine }) => 
   const { machines, filters, resetFilters } = useApp();
   const [sortBy, setSortBy] = useState<'recent' | 'price-asc' | 'price-desc' | 'year-desc'>('recent');
 
-  // Filter machines based on active filters & PUBLISHED status
+  // Filter machines based on active filters & APPROVED/PUBLISHED status
   const filteredMachines = useMemo(() => {
     return machines.filter(m => {
-      // Must be PUBLISHED or SOLD (if sold option visible)
-      if (m.status !== 'PUBLISHED' && m.status !== 'SOLD') return false;
+      // Must be APPROVED or PUBLISHED for public view
+      if (m.status !== 'APPROVED' && m.status !== 'PUBLISHED') return false;
 
       // Text search
       if (filters.search) {
@@ -40,8 +40,12 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ onSelectMachine }) => 
       // Location
       if (filters.location && !m.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
 
-      // Owner Type
-      if (filters.ownerType && m.owner_type !== filters.ownerType) return false;
+      // Owner Type / Source Type
+      if (filters.ownerType) {
+        const matchSource = m.source_type === filters.ownerType;
+        const matchOwner = m.owner_type === filters.ownerType;
+        if (!matchSource && !matchOwner) return false;
+      }
 
       // Year Min
       if (filters.yearMin && m.year < parseInt(filters.yearMin, 10)) return false;

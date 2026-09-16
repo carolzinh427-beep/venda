@@ -12,9 +12,11 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ onSelectMachin
   const { machines } = useApp();
 
   const featuredMachines = machines
-    .filter(m => m.status === 'PUBLISHED')
+    .filter(m => m.status === 'APPROVED' || m.status === 'PUBLISHED')
     .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
     .slice(0, 6);
+
+  const activeCount = machines.filter(m => m.status === 'APPROVED' || m.status === 'PUBLISHED').length;
 
   return (
     <section className="py-16 bg-white border-t border-b border-gray-100">
@@ -36,7 +38,7 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ onSelectMachin
             onClick={onNavigateCatalog}
             className="inline-flex items-center gap-2 text-sm font-bold text-agro-leaf hover:text-agro-dark transition-colors group"
           >
-            <span>Ver todo o estoque ({machines.filter(m => m.status === 'PUBLISHED').length})</span>
+            <span>Ver todo o estoque ({activeCount})</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>

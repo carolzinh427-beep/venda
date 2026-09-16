@@ -9,7 +9,7 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
   const { settings, machines } = useApp();
 
-  const totalMachines = machines.filter(m => m.status === 'PUBLISHED').length;
+  const totalMachines = machines.filter(m => m.status === 'APPROVED' || m.status === 'PUBLISHED').length;
 
   return (
     <section className="relative bg-agro-dark text-white overflow-hidden pt-6 pb-16 lg:pt-10 lg:pb-24 border-b border-agro-leaf/20">

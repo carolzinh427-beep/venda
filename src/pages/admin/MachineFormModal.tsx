@@ -1,23 +1,28 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Machine, OwnerType, MachineStatus } from '../../types';
+import { Machine, SourceType, OwnerType, MachineStatus, FeeType } from '../../types';
 import { X, Save, Upload, Plus, Trash2, ShieldCheck, UserCheck } from 'lucide-react';
 
 interface MachineFormModalProps {
   initialMachine?: Machine | null;
-  defaultOwnerType?: OwnerType;
+  defaultOwnerType?: string;
   onClose: () => void;
 }
 
 export const MachineFormModal: React.FC<MachineFormModalProps> = ({ 
   initialMachine, 
-  defaultOwnerType = 'PLATFORM', 
+  defaultOwnerType = 'admin', 
   onClose 
 }) => {
   const { categories, addMachine, updateMachine } = useApp();
 
-  const [ownerType, setOwnerType] = useState<OwnerType>(initialMachine?.owner_type || defaultOwnerType);
-  const [status, setStatus] = useState<MachineStatus>(initialMachine?.status || 'PUBLISHED');
+  const [sourceType, setSourceType] = useState<SourceType>(
+    initialMachine?.source_type || (defaultOwnerType === 'THIRD_PARTY' ? 'advertiser' : 'admin')
+  );
+  const [feeType, setFeeType] = useState<FeeType>(initialMachine?.fee_type || 'GROUP');
+  const [feePercentage, setFeePercentage] = useState<number>(initialMachine?.fee_percentage || 1);
+  const [status, setStatus] = useState<MachineStatus>(initialMachine?.status || 'APPROVED');
+  
   const [name, setName] = useState(initialMachine?.name || '');
   const [brand, setBrand] = useState(initialMachine?.brand || '');
   const [model, setModel] = useState(initialMachine?.model || '');
@@ -25,11 +30,13 @@ export const MachineFormModal: React.FC<MachineFormModalProps> = ({
   const [year, setYear] = useState<number>(initialMachine?.year || new Date().getFullYear());
   const [hours, setHours] = useState<string>(initialMachine?.hours ? initialMachine.hours.toString() : '');
   const [price, setPrice] = useState<string>(initialMachine?.price ? initialMachine.price.toString() : '');
-  const [location, setLocation] = useState(initialMachine?.location || '');
+  const [city, setCity] = useState(initialMachine?.city || 'Linhares');
+  const [state, setState] = useState(initialMachine?.state || 'ES');
+  const [location, setLocation] = useState(initialMachine?.location || 'Linhares / ES');
   const [description, setDescription] = useState(initialMachine?.description || '');
   const [featured, setFeatured] = useState<boolean>(initialMachine?.featured || false);
-  const [sellerName, setSellerName] = useState(initialMachine?.seller_name || '');
-  const [sellerWhatsapp, setSellerWhatsapp] = useState(initialMachine?.seller_whatsapp || '');
+  const [advertiserName, setAdvertiserName] = useState(initialMachine?.advertiser_name || initialMachine?.seller_name || '');
+  const [advertiserWhatsapp, setAdvertiserWhatsapp] = useState(initialMachine?.advertiser_whatsapp || initialMachine?.seller_whatsapp || '');
 
   // Specifications
   const initialSpecs = initialMachine?.specifications 
@@ -94,8 +101,13 @@ export const MachineFormModal: React.FC<MachineFormModalProps> = ({
     const parsedHours = hours ? parseInt(hours, 10) : null;
     const finalImages = images.length > 0 ? images : ['https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=1200&q=80'];
 
+    const ownerTypeValue: OwnerType = sourceType === 'admin' ? 'PLATFORM' : 'THIRD_PARTY';
+
     const machineData = {
-      owner_type: ownerType,
+      source_type: sourceType,
+      owner_type: ownerTypeValue,
+      fee_type: feeType,
+      fee_percentage: feeType === 'AGENCY' ? 2 : 1,
       name,
       brand,
       model,
@@ -103,14 +115,18 @@ export const MachineFormModal: React.FC<MachineFormModalProps> = ({
       year: Number(year),
       hours: parsedHours,
       price: parsedPrice,
-      location: location || 'Linhares / ES',
+      city: city || 'Linhares',
+      state: state || 'ES',
+      location: location || `${city}/${state}`,
       description,
       specifications: formattedSpecs,
       images: finalImages,
       status,
       featured,
-      seller_name: sellerName || undefined,
-      seller_whatsapp: sellerWhatsapp || undefined,
+      advertiser_name: advertiserName || undefined,
+      advertiser_whatsapp: advertiserWhatsapp || undefined,
+      seller_name: advertiserName || undefined,
+      seller_whatsapp: advertiserWhatsapp || undefined,
     };
 
     if (initialMachine) {
@@ -130,14 +146,14 @@ export const MachineFormModal: React.FC<MachineFormModalProps> = ({
         <div className="bg-agro-dark text-white p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-agro-leaf text-agro-accent">
-              {ownerType === 'PLATFORM' ? <ShieldCheck className="w-5 h-5" /> : <UserCheck className="w-5 h-5" />}
+              {sourceType === 'admin' ? <ShieldCheck className="w-5 h-5" /> : <UserCheck className="w-5 h-5" />}
             </div>
             <div>
               <h2 className="text-lg font-extrabold">
-                {initialMachine ? 'Editar Máquina' : 'Cadastrar Máquina no Estoque'}
+                {initialMachine ? 'Editar Anúncio / Máquina' : 'Cadastrar Máquina no Estoque'}
               </h2>
               <span className="text-xs text-gray-300">
-                {ownerType === 'PLATFORM' ? 'Máquina Própria da Plataforma' : 'Máquina de Terceiro Agenciada'}
+                {sourceType === 'admin' ? 'Máquina Própria (source_type = admin)' : 'Máquina de Terceiro (source_type = advertiser)'}
               </span>
             </div>
           </div>
@@ -150,53 +166,52 @@ export const MachineFormModal: React.FC<MachineFormModalProps> = ({
         {/* BODY */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1">
           
-          {/* OWNER TYPE & STATUS SELECTORS */}
+          {/* OWNER TYPE, FEE & STATUS SELECTORS */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-agro-cream rounded-2xl border border-agro-leaf/20">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Origem do Cadastro</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Origem (source_type)</label>
               <select
-                value={ownerType}
-                onChange={(e: any) => setOwnerType(e.target.value)}
+                value={sourceType}
+                onChange={(e: any) => setSourceType(e.target.value)}
                 className="w-full p-2.5 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-800"
               >
-                <option value="PLATFORM">Máquina Própria (PLATFORM)</option>
-                <option value="THIRD_PARTY">Anúncio de Terceiro (THIRD_PARTY)</option>
+                <option value="admin">Administrador (admin)</option>
+                <option value="advertiser">Anunciante Terceiro (advertiser)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Status de Exibição</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Modalidade & Taxa</label>
+              <select
+                value={feeType}
+                onChange={(e: any) => setFeeType(e.target.value)}
+                className="w-full p-2.5 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-800"
+              >
+                <option value="GROUP">Anúncio Grupo (1%)</option>
+                <option value="AGENCY">Agenciamento (2%)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Status de Moderação</label>
               <select
                 value={status}
                 onChange={(e: any) => setStatus(e.target.value)}
                 className="w-full p-2.5 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-800"
               >
-                <option value="PUBLISHED">Publicado (Visível)</option>
-                <option value="PENDING">Pendente (Moderação)</option>
-                <option value="NEGOTIATING">Em Negociação</option>
-                <option value="SOLD">Vendido</option>
-                <option value="REJECTED">Rejeitado</option>
-                <option value="INACTIVE">Inativo (Oculto)</option>
+                <option value="APPROVED">APPROVED (Aprovado)</option>
+                <option value="PENDING">PENDING (Pendente)</option>
+                <option value="SOLD">SOLD (Vendido)</option>
+                <option value="HIDDEN">HIDDEN (Oculto)</option>
+                <option value="REJECTED">REJECTED (Rejeitado)</option>
               </select>
-            </div>
-
-            <div className="flex items-center pt-5">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-agro-dark">
-                <input
-                  type="checkbox"
-                  checked={featured}
-                  onChange={(e) => setFeatured(e.target.checked)}
-                  className="w-4 h-4 text-agro-leaf rounded focus:ring-agro-leaf"
-                />
-                <span>Destacar na Home</span>
-              </label>
             </div>
           </div>
 
           {/* MAIN INFO */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-gray-700 mb-1">Nome da Máquina *</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Nome / Título da Máquina *</label>
               <input
                 type="text"
                 required
@@ -267,7 +282,7 @@ export const MachineFormModal: React.FC<MachineFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Preço em R$ (vazio = Consulte)</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Preço R$ (vazio = Consulte)</label>
               <input
                 type="number"
                 value={price}
@@ -278,55 +293,65 @@ export const MachineFormModal: React.FC<MachineFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Localização *</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Cidade *</label>
               <input
                 type="text"
                 required
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Ex: Linhares / ES"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Ex: Linhares"
+                className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Estado (UF) *</label>
+              <input
+                type="text"
+                required
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="Ex: ES"
                 className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-medium"
               />
             </div>
           </div>
 
-          {/* SELLER DATA IF THIRD PARTY */}
-          {ownerType === 'THIRD_PARTY' && (
-            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-amber-900 mb-1">Nome do Vendedor Terceiro</label>
-                <input
-                  type="text"
-                  value={sellerName}
-                  onChange={(e) => setSellerName(e.target.value)}
-                  placeholder="Ex: Carlos Eduardo"
-                  className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-amber-900 mb-1">WhatsApp do Vendedor Terceiro</label>
-                <input
-                  type="tel"
-                  value={sellerWhatsapp}
-                  onChange={(e) => setSellerWhatsapp(e.target.value)}
-                  placeholder="Ex: (27) 99888-7777"
-                  className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs"
-                />
-              </div>
+          {/* ADVERTISER DETAILS */}
+          <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-amber-900 mb-1">Nome do Anunciante</label>
+              <input
+                type="text"
+                value={advertiserName}
+                onChange={(e) => setAdvertiserName(e.target.value)}
+                placeholder="Ex: Carlos Oliveira"
+                className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs font-medium"
+              />
             </div>
-          )}
+
+            <div>
+              <label className="block text-xs font-bold text-amber-900 mb-1">WhatsApp do Anunciante</label>
+              <input
+                type="tel"
+                value={advertiserWhatsapp}
+                onChange={(e) => setAdvertiserWhatsapp(e.target.value)}
+                placeholder="Ex: (27) 99888-7777"
+                className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs font-medium"
+              />
+            </div>
+          </div>
 
           {/* DESCRIPTION */}
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Descrição Detalhada *</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Descrição Completa *</label>
             <textarea
               rows={3}
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descreva o histórico do equipamento..."
-              className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm"
+              className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-medium"
             />
           </div>
 
@@ -440,7 +465,7 @@ export const MachineFormModal: React.FC<MachineFormModalProps> = ({
               className="bg-agro-leaf hover:bg-agro-dark text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow transition-colors flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              <span>Salvar Máquina</span>
+              <span>Salvar Anúncio / Máquina</span>
             </button>
           </div>
 

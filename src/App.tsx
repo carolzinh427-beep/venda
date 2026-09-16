@@ -16,9 +16,10 @@ import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminMachines } from './pages/admin/AdminMachines';
-import { AdminPending } from './pages/admin/AdminPending';
+import { AdminAdvertisers } from './pages/admin/AdminAdvertisers';
 import { AdminInterests } from './pages/admin/AdminInterests';
-import { AdminAgency } from './pages/admin/AdminAgency';
+import { AdminVendas } from './pages/admin/AdminVendas';
+import { AdminMyMachines } from './pages/admin/AdminMyMachines';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { MachineFormModal } from './pages/admin/MachineFormModal';
 import { Machine, OwnerType } from './types';
@@ -33,9 +34,19 @@ export const App: React.FC = () => {
 
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
   
-  // Admin active tab
-  const [adminTab, setAdminTab] = useState<string>('dashboard');
-  
+  // Map sub-routes to admin tab
+  const getAdminTabFromPath = (path: string): string => {
+    if (path.includes('/admin/machines')) return 'machines';
+    if (path.includes('/admin/advertisers')) return 'advertisers';
+    if (path.includes('/admin/interests')) return 'interests';
+    if (path.includes('/admin/vendas')) return 'vendas';
+    if (path.includes('/admin/my-machines')) return 'my-machines';
+    if (path.includes('/admin/settings')) return 'settings';
+    return 'dashboard';
+  };
+
+  const [adminTab, setAdminTab] = useState<string>(() => getAdminTabFromPath(currentPath));
+
   // Admin Machine Modal state
   const [adminFormModalOpen, setAdminFormModalOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
@@ -44,7 +55,11 @@ export const App: React.FC = () => {
   // Handle browser back/forward buttons
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname || '/');
+      const p = window.location.pathname || '/';
+      setCurrentPath(p);
+      if (p.startsWith('/admin')) {
+        setAdminTab(getAdminTabFromPath(p));
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -55,8 +70,25 @@ export const App: React.FC = () => {
     if (machineId) {
       setSelectedMachineId(machineId);
     }
+    if (path.startsWith('/admin')) {
+      setAdminTab(getAdminTabFromPath(path));
+    }
     window.history.pushState({}, '', path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAdminTabChange = (tabId: string) => {
+    setAdminTab(tabId);
+    let targetPath = '/admin';
+    if (tabId === 'machines') targetPath = '/admin/machines';
+    if (tabId === 'advertisers') targetPath = '/admin/advertisers';
+    if (tabId === 'interests') targetPath = '/admin/interests';
+    if (tabId === 'vendas') targetPath = '/admin/vendas';
+    if (tabId === 'my-machines') targetPath = '/admin/my-machines';
+    if (tabId === 'settings') targetPath = '/admin/settings';
+    
+    window.history.pushState({}, '', targetPath);
+    setCurrentPath(targetPath);
   };
 
   const handleOpenAddModal = (machine?: Machine, defaultOwnerType: OwnerType = 'PLATFORM') => {
@@ -77,52 +109,42 @@ export const App: React.FC = () => {
     return (
       <AdminLayout 
         activeTab={adminTab} 
-        onTabChange={setAdminTab} 
+        onTabChange={handleAdminTabChange} 
         onNavigatePublic={navigateTo}
       >
         {adminTab === 'dashboard' && (
           <AdminDashboard 
-            onNavigateTab={setAdminTab} 
+            onNavigateTab={handleAdminTabChange} 
             onOpenAddModal={() => handleOpenAddModal(undefined, 'PLATFORM')} 
           />
         )}
 
-        {adminTab === 'maquinas' && (
+        {adminTab === 'machines' && (
           <AdminMachines 
-            onOpenForm={(machine, ownerType) => handleOpenAddModal(machine, ownerType)} 
-            filterOwnerType="ALL"
+            onOpenForm={(machine) => handleOpenAddModal(machine, machine?.owner_type || 'PLATFORM')} 
+            initialStatusFilter="ALL"
           />
         )}
 
-        {adminTab === 'proprias' && (
-          <AdminMachines 
-            onOpenForm={(machine, ownerType) => handleOpenAddModal(machine, ownerType)} 
-            filterOwnerType="PLATFORM"
-          />
+        {adminTab === 'advertisers' && (
+          <AdminAdvertisers />
         )}
 
-        {adminTab === 'terceiros' && (
-          <AdminMachines 
-            onOpenForm={(machine, ownerType) => handleOpenAddModal(machine, ownerType)} 
-            filterOwnerType="THIRD_PARTY"
-          />
-        )}
-
-        {adminTab === 'pendentes' && (
-          <AdminPending 
-            onOpenEditModal={(machine) => handleOpenAddModal(machine, machine.owner_type)} 
-          />
-        )}
-
-        {adminTab === 'interesses' && (
+        {adminTab === 'interests' && (
           <AdminInterests />
         )}
 
-        {adminTab === 'agenciamento' && (
-          <AdminAgency />
+        {adminTab === 'vendas' && (
+          <AdminVendas />
         )}
 
-        {adminTab === 'configuracoes' && (
+        {adminTab === 'my-machines' && (
+          <AdminMyMachines 
+            onOpenForm={(machine) => handleOpenAddModal(machine, 'PLATFORM')} 
+          />
+        )}
+
+        {adminTab === 'settings' && (
           <AdminSettings />
         )}
 

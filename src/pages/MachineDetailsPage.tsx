@@ -39,7 +39,7 @@ export const MachineDetailsPage: React.FC<MachineDetailsPageProps> = ({ machineI
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
   };
 
-  const isPlatformOwned = machine.owner_type === 'PLATFORM';
+  const isPlatformOwned = machine.source_type === 'admin' || machine.owner_type === 'PLATFORM';
   const cleanWhatsApp = settings.whatsapp.replace(/\D/g, '');
   const waText = `Olá! Tenho interesse na máquina ${machine.name} (Ref: ${machine.model}, Ano ${machine.year}). Gostaria de receber mais informações e detalhes.`;
   const waUrl = `https://wa.me/${cleanWhatsApp}?text=${encodeURIComponent(waText)}`;
@@ -168,7 +168,7 @@ export const MachineDetailsPage: React.FC<MachineDetailsPageProps> = ({ machineI
                 </div>
                 <div className="flex items-center gap-2 col-span-2 text-gray-600 border-t border-gray-200/60 pt-2 mt-1">
                   <MapPin className="w-4 h-4 text-agro-leaf shrink-0" />
-                  <span>Localização: <strong>{machine.location}</strong></span>
+                  <span>Localização: <strong>{machine.location || `${machine.city}/${machine.state}`}</strong></span>
                 </div>
               </div>
 

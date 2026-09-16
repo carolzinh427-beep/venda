@@ -1,21 +1,45 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { InterestStatus } from '../../types';
-import { Heart, MessageCircle, CheckCircle, Clock, Search, Filter, ShieldCheck, UserCheck } from 'lucide-react';
+import { Heart, MessageCircle, Phone, Calendar, Clock, Filter, Search, UserCheck } from 'lucide-react';
 
 export const AdminInterests: React.FC = () => {
-  const { interests, machines, updateInterestStatus, settings } = useApp();
-  const [filterStatus, setFilterStatus] = useState<'ALL' | InterestStatus>('ALL');
+  const { interests, machines, advertisers, updateInterestStatus, settings, adminGlobalSearch } = useApp();
+  
+  const [filterMachine, setFilterMachine] = useState<string>('');
+  const [filterAdvertiser, setFilterAdvertiser] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
-  const filteredInterests = interests.filter(i => {
-    if (filterStatus !== 'ALL' && i.status !== filterStatus) return false;
+  const filteredInterests = interests.filter(item => {
+    // Status filter
+    if (filterStatus !== 'ALL' && item.status !== filterStatus) return false;
+
+    // Machine filter
+    if (filterMachine && item.machine_id !== filterMachine) return false;
+
+    // Advertiser filter
+    if (filterAdvertiser) {
+      const advName = (item.advertiser_name || '').toLowerCase();
+      if (!advName.includes(filterAdvertiser.toLowerCase()) && item.advertiser_id !== filterAdvertiser) return false;
+    }
+
+    // Global admin search or local search
+    if (adminGlobalSearch) {
+      const q = adminGlobalSearch.toLowerCase();
+      const nameMatch = item.name.toLowerCase().includes(q);
+      const machineMatch = item.machine_name.toLowerCase().includes(q);
+      const advMatch = (item.advertiser_name || '').toLowerCase().includes(q);
+      const waMatch = item.whatsapp.includes(q);
+      if (!nameMatch && !machineMatch && !advMatch && !waMatch) return false;
+    }
+
     return true;
   });
 
   const getStatusBadge = (status: InterestStatus) => {
     switch (status) {
       case 'NEW':
-        return <span className="bg-rose-100 text-rose-700 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md border border-rose-300">Novo</span>;
+        return <span className="bg-rose-100 text-rose-700 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md border border-rose-300">Novo Lead</span>;
       case 'CONTACTED':
         return <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md border border-amber-300">Em Contato</span>;
       case 'COMPLETED':
@@ -29,12 +53,12 @@ export const AdminInterests: React.FC = () => {
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-rose-600">Leads Comercial</span>
-          <h1 className="text-2xl font-extrabold text-agro-dark">Interesses Registrados</h1>
-          <p className="text-xs text-gray-500">Acompanhe e inicie conversa no WhatsApp com os clientes que demonstraram interesse nas máquinas.</p>
+          <span className="text-xs font-bold uppercase tracking-wider text-rose-600">Compradores Qualificados</span>
+          <h1 className="text-2xl font-extrabold text-agro-dark">Controle de Interessados</h1>
+          <p className="text-xs text-gray-500">Registro de todas as pessoas que clicaram em "Tenho interesse" nas máquinas.</p>
         </div>
 
-        {/* STATUS FILTER TABS */}
+        {/* STATUS QUICK TABS */}
         <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-200 text-xs font-bold shadow-sm">
           <button
             onClick={() => setFilterStatus('ALL')}
@@ -62,32 +86,51 @@ export const AdminInterests: React.FC = () => {
           >
             Em Contato ({interests.filter(i => i.status === 'CONTACTED').length})
           </button>
-
-          <button
-            onClick={() => setFilterStatus('COMPLETED')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              filterStatus === 'COMPLETED' ? 'bg-emerald-700 text-white' : 'text-gray-600'
-            }`}
-          >
-            Concluídos ({interests.filter(i => i.status === 'COMPLETED').length})
-          </button>
         </div>
       </div>
 
-      {/* LIST OF INTEREST LEADS */}
+      {/* FILTERS BY MACHINE AND ADVERTISER */}
+      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Filtrar por Máquina</label>
+          <select
+            value={filterMachine}
+            onChange={(e) => setFilterMachine(e.target.value)}
+            className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-medium"
+          >
+            <option value="">Todas as Máquinas</option>
+            {machines.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Filtrar por Anunciante Responsável</label>
+          <select
+            value={filterAdvertiser}
+            onChange={(e) => setFilterAdvertiser(e.target.value)}
+            className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-medium"
+          >
+            <option value="">Todos os Anunciantes</option>
+            {advertisers.map(a => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* INTEREST CARDS GRID */}
       {filteredInterests.length === 0 ? (
         <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-gray-300 shadow-sm my-6 space-y-3">
-          <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-500 mx-auto flex items-center justify-center">
-            <Heart className="w-8 h-8" />
-          </div>
-          <h3 className="text-lg font-extrabold text-agro-dark">Nenhum interesse registrado no filtro</h3>
+          <Heart className="w-10 h-10 text-rose-500 mx-auto" />
+          <h3 className="text-lg font-extrabold text-agro-dark">Nenhum interessado encontrado para os filtros selecionados</h3>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredInterests.map(item => {
-            const machine = machines.find(m => m.id === item.machine_id);
             const cleanWa = item.whatsapp.replace(/\D/g, '');
-            const waMessage = `Olá ${item.name}! Vi que você demonstrou interesse no anúncio "${item.machine_name}" na plataforma ${settings.company_name}. Como posso ajudar com fotos, ficha técnica ou proposta?`;
+            const waMessage = `Olá ${item.name}! Vi que você demonstrou interesse na máquina "${item.machine_name}" na plataforma ${settings.company_name}. Como posso te ajudar?`;
             const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent(waMessage)}`;
 
             return (
@@ -96,60 +139,48 @@ export const AdminInterests: React.FC = () => {
                 className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm space-y-4 hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div>
-                  {/* TOP BADGES */}
                   <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-3">
                     {getStatusBadge(item.status)}
-                    <span className="text-[11px] text-gray-400 font-semibold">
-                      {new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    <span className="text-[11px] text-gray-400 font-bold flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {item.date_str} às {item.time_str}
                     </span>
                   </div>
 
-                  {/* BUYER INFO */}
-                  <div className="space-y-1">
-                    <h3 className="text-base font-extrabold text-agro-dark">{item.name}</h3>
-                    <p className="text-xs text-gray-700 font-medium">
-                      <strong>WhatsApp:</strong> <span className="font-bold text-emerald-700">{item.whatsapp}</span>
-                    </p>
-                    {item.email && (
-                      <p className="text-xs text-gray-600">
-                        <strong>E-mail:</strong> {item.email}
-                      </p>
-                    )}
-                  </div>
+                  {/* EXACT FIELDS SPECIFIED IN PROMPT */}
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase block">INTERESSADO</span>
+                      <span className="font-extrabold text-agro-dark text-base">{item.name}</span>
+                    </div>
 
-                  {/* MACHINE CONTEXT */}
-                  <div className="mt-3 p-3 bg-agro-cream rounded-2xl border border-agro-leaf/20 space-y-1">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase block">Máquina Desejada</span>
-                    <span className="text-xs font-extrabold text-agro-dark block leading-snug">
-                      {item.machine_name}
-                    </span>
-                    {machine && (
-                      <div className="flex items-center gap-2 pt-1 text-[11px]">
-                        {machine.owner_type === 'PLATFORM' ? (
-                          <span className="text-emerald-700 font-bold flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3" /> Própria
-                          </span>
-                        ) : (
-                          <span className="text-amber-800 font-bold flex items-center gap-1">
-                            <UserCheck className="w-3 h-3" /> Vendedor Terceiro
-                          </span>
-                        )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase block">WHATSAPP</span>
+                        <span className="font-bold text-emerald-700">{item.whatsapp}</span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase block">ANUNCIANTE</span>
+                        <span className="font-bold text-gray-800">{item.advertiser_name || 'Administração'}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase block">MÁQUINA</span>
+                      <span className="font-extrabold text-agro-dark">{item.machine_name}</span>
+                    </div>
+
+                    {item.message && (
+                      <div className="p-2.5 bg-gray-50 rounded-xl text-gray-700 italic border border-gray-200 text-xs">
+                        "{item.message}"
                       </div>
                     )}
                   </div>
-
-                  {/* MESSAGE IF ANY */}
-                  {item.message && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-xl text-xs text-gray-700 italic border border-gray-200">
-                      "{item.message}"
-                    </div>
-                  )}
                 </div>
 
-                {/* ACTIONS BAR */}
+                {/* ACTIONS */}
                 <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center gap-2">
-                  
-                  {/* WHATSAPP ACTION BUTTON */}
                   <a
                     href={waUrl}
                     target="_blank"
@@ -157,14 +188,13 @@ export const AdminInterests: React.FC = () => {
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow"
                   >
                     <MessageCircle className="w-4 h-4 fill-white text-emerald-600" />
-                    <span>WhatsApp</span>
+                    <span>WhatsApp do Interessado</span>
                   </a>
 
-                  {/* STATUS SELECTOR BUTTONS */}
                   {item.status === 'NEW' && (
                     <button
                       onClick={() => updateInterestStatus(item.id, 'CONTACTED')}
-                      className="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs py-2.5 rounded-xl border border-amber-300 transition-colors"
+                      className="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs py-2.5 rounded-xl border border-amber-300"
                     >
                       Marcar em Contato
                     </button>
@@ -173,7 +203,7 @@ export const AdminInterests: React.FC = () => {
                   {item.status !== 'COMPLETED' && (
                     <button
                       onClick={() => updateInterestStatus(item.id, 'COMPLETED')}
-                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs py-2.5 rounded-xl transition-colors"
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs py-2.5 rounded-xl"
                     >
                       Concluir
                     </button>

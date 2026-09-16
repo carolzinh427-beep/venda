@@ -1,8 +1,10 @@
-export type OwnerType = 'PLATFORM' | 'THIRD_PARTY';
+export type SourceType = 'admin' | 'advertiser';
+export type OwnerType = 'PLATFORM' | 'THIRD_PARTY' | 'admin' | 'advertiser';
 
-export type MachineStatus = 'PENDING' | 'PUBLISHED' | 'NEGOTIATING' | 'SOLD' | 'REJECTED' | 'INACTIVE';
+export type MachineStatus = 'PENDING' | 'APPROVED' | 'PUBLISHED' | 'REJECTED' | 'SOLD' | 'HIDDEN' | 'NEGOTIATING' | 'INACTIVE';
 
-export type SaleType = 'GROUP_AD' | 'AGENCY'; // GROUP_AD = 1%, AGENCY = 2%
+export type FeeType = 'GROUP' | 'AGENCY' | 'GROUP_AD';
+export type SaleType = 'GROUP_AD' | 'AGENCY' | 'GROUP';
 
 export type InterestStatus = 'NEW' | 'CONTACTED' | 'COMPLETED';
 
@@ -28,10 +30,23 @@ export interface Category {
   iconName: string;
 }
 
+export interface Advertiser {
+  id: string;
+  name: string;
+  whatsapp: string;
+  email?: string;
+  city?: string;
+  state?: string;
+  created_at: string;
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
 export interface Machine {
   id: string;
-  created_by?: string;
-  owner_type: OwnerType;
+  source_type: SourceType; // 'admin' | 'advertiser'
+  owner_type?: OwnerType; // 'PLATFORM' | 'THIRD_PARTY'
+  fee_type: FeeType; // 'GROUP' | 'AGENCY'
+  fee_percentage: number; // 1 | 2
   name: string;
   brand: string;
   model: string;
@@ -39,16 +54,24 @@ export interface Machine {
   year: number;
   hours?: number | null;
   price?: number | null; // null = Consulte o valor
+  city: string;
+  state: string;
   location: string;
   description: string;
   specifications: Record<string, string>;
   images: string[];
   status: MachineStatus;
   featured: boolean;
-  created_at: string;
-  updated_at: string;
+  advertiser_id?: string;
+  advertiser_name?: string;
+  advertiser_whatsapp?: string;
   seller_name?: string;
   seller_whatsapp?: string;
+  sold_at?: string;
+  sold_time?: string;
+  sold_notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Announcement {
@@ -60,7 +83,7 @@ export interface Announcement {
   state: string;
   machine_id: string;
   machine?: Machine;
-  sale_type: SaleType;
+  sale_type: FeeType;
   status: MachineStatus;
   created_at: string;
 }
@@ -69,12 +92,26 @@ export interface Interest {
   id: string;
   machine_id: string;
   machine_name: string;
+  advertiser_name?: string;
+  advertiser_id?: string;
   name: string;
   whatsapp: string;
   email?: string;
   message?: string;
   status: InterestStatus;
   created_at: string;
+  date_str: string;
+  time_str: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  user: string;
+  action: string;
+  target_name?: string;
+  created_at: string;
+  date_str: string;
+  time_str: string;
 }
 
 export interface AgencyDeal {

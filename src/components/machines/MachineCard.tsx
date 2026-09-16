@@ -21,12 +21,17 @@ export const MachineCard: React.FC<MachineCardProps> = ({ machine, onSelect, onI
         return <span className="bg-rose-600 text-white text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider shadow-sm">Vendido</span>;
       case 'NEGOTIATING':
         return <span className="bg-amber-600 text-white text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider shadow-sm">Em Negociação</span>;
+      case 'PENDING':
+        return <span className="bg-amber-500 text-white text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider shadow-sm">Pendente</span>;
+      case 'HIDDEN':
+      case 'REJECTED':
+        return <span className="bg-gray-600 text-white text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider shadow-sm">Indisponível</span>;
       default:
         return <span className="bg-emerald-700 text-white text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider shadow-sm">Disponível</span>;
     }
   };
 
-  const isPlatformOwned = machine.owner_type === 'PLATFORM';
+  const isPlatformOwned = machine.source_type === 'admin' || machine.owner_type === 'PLATFORM';
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-gray-200/80 shadow-agro-card hover:shadow-agro-hover hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
@@ -100,7 +105,7 @@ export const MachineCard: React.FC<MachineCardProps> = ({ machine, onSelect, onI
 
             <div className="flex items-center gap-1.5 col-span-2 text-gray-600 border-t border-gray-200/60 pt-1.5 mt-0.5">
               <MapPin className="w-3.5 h-3.5 text-agro-leaf shrink-0" />
-              <span className="truncate">{machine.location}</span>
+              <span className="truncate">{machine.location || `${machine.city}/${machine.state}`}</span>
             </div>
           </div>
         </div>

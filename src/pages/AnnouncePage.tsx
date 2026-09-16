@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { SaleType } from '../types';
+import { FeeType } from '../types';
 import { 
   PlusCircle, Upload, CheckCircle2, ShieldCheck, X, Image as ImageIcon, 
   ArrowRight, DollarSign, User, Phone, Mail, MapPin, Tractor, AlertCircle 
@@ -13,7 +13,7 @@ interface AnnouncePageProps {
 export const AnnouncePage: React.FC<AnnouncePageProps> = ({ onBackToHome }) => {
   const { categories, addAnnouncement } = useApp();
 
-  const [saleType, setSaleType] = useState<SaleType>('GROUP_AD');
+  const [saleType, setSaleType] = useState<FeeType>('GROUP');
   const [step, setStep] = useState<'intro' | 'form' | 'success'>('intro');
 
   // Form Fields
@@ -69,14 +69,6 @@ export const AnnouncePage: React.FC<AnnouncePageProps> = ({ onBackToHome }) => {
     setImageUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleAddSpecRow = () => {
-    setSpecsList(prev => [...prev, { key: '', val: '' }]);
-  };
-
-  const handleRemoveSpecRow = (idx: number) => {
-    setSpecsList(prev => prev.filter((_, i) => i !== idx));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sellerName || !sellerWhatsapp || !machineName || !brand || !model) return;
@@ -110,6 +102,8 @@ export const AnnouncePage: React.FC<AnnouncePageProps> = ({ onBackToHome }) => {
         year: Number(year),
         hours: parsedHours,
         price: parsedPrice,
+        city: city || 'Linhares',
+        state: state || 'ES',
         location: location || `${city}/${state}`,
         description,
         specifications,
@@ -150,7 +144,7 @@ export const AnnouncePage: React.FC<AnnouncePageProps> = ({ onBackToHome }) => {
               <div className="flex justify-between">
                 <span className="font-bold text-gray-500">Modalidade Escolhida:</span>
                 <span className="font-bold text-emerald-700">
-                  {saleType === 'GROUP_AD' ? 'Anúncio no Grupo (Taxa de 1%)' : 'Venda por Agenciamento (Taxa de 2%)'}
+                  {saleType === 'GROUP' ? 'Anúncio no Grupo (Taxa de 1%)' : 'Venda por Agenciamento (Taxa de 2%)'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -201,9 +195,9 @@ export const AnnouncePage: React.FC<AnnouncePageProps> = ({ onBackToHome }) => {
                 
                 {/* OPTION 1 CARD */}
                 <div 
-                  onClick={() => setSaleType('GROUP_AD')}
+                  onClick={() => setSaleType('GROUP')}
                   className={`cursor-pointer bg-white rounded-3xl p-6 sm:p-8 border-2 transition-all shadow-md relative flex flex-col justify-between ${
-                    saleType === 'GROUP_AD' 
+                    saleType === 'GROUP' 
                       ? 'border-emerald-600 ring-4 ring-emerald-500/10 bg-emerald-50/20' 
                       : 'border-gray-200 hover:border-emerald-400'
                   }`}
@@ -232,7 +226,7 @@ export const AnnouncePage: React.FC<AnnouncePageProps> = ({ onBackToHome }) => {
                   <button
                     type="button"
                     onClick={() => {
-                      setSaleType('GROUP_AD');
+                      setSaleType('GROUP');
                       setStep('form');
                     }}
                     className="mt-6 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm shadow"
@@ -308,9 +302,9 @@ export const AnnouncePage: React.FC<AnnouncePageProps> = ({ onBackToHome }) => {
               <div className="bg-agro-cream p-1.5 rounded-xl border border-agro-leaf/20 flex items-center gap-1 text-xs font-bold">
                 <button
                   type="button"
-                  onClick={() => setSaleType('GROUP_AD')}
+                  onClick={() => setSaleType('GROUP')}
                   className={`px-3 py-1.5 rounded-lg transition-all ${
-                    saleType === 'GROUP_AD' ? 'bg-emerald-700 text-white shadow' : 'text-gray-600'
+                    saleType === 'GROUP' ? 'bg-emerald-700 text-white shadow' : 'text-gray-600'
                   }`}
                 >
                   Anúncio no Grupo (1%)
@@ -532,7 +526,6 @@ export const AnnouncePage: React.FC<AnnouncePageProps> = ({ onBackToHome }) => {
 
                 {/* UPLOADER CONTROLS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* LOCAL FILE INPUT */}
                   <label className="cursor-pointer bg-white border-2 border-dashed border-agro-leaf/40 hover:border-agro-leaf p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all">
                     <Upload className="w-6 h-6 text-agro-leaf mb-1" />
                     <span className="text-xs font-bold text-agro-dark">Upload de Fotos do Aparelho</span>
@@ -540,7 +533,6 @@ export const AnnouncePage: React.FC<AnnouncePageProps> = ({ onBackToHome }) => {
                     <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" />
                   </label>
 
-                  {/* URL INPUT */}
                   <div className="bg-white border border-gray-300 p-3 rounded-xl flex flex-col justify-between">
                     <label className="block text-[11px] font-bold text-gray-600 mb-1">Ou cole o link de uma imagem (URL)</label>
                     <div className="flex gap-2">
