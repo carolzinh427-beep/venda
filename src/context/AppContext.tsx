@@ -9,6 +9,7 @@ import {
   INITIAL_ANNOUNCEMENTS, INITIAL_INTERESTS, INITIAL_AGENCY_DEALS,
   INITIAL_ADVERTISERS, INITIAL_ACTIVITY_LOGS 
 } from '../lib/mockData';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const DEFAULT_FILTERS: MachineFilters = {
   search: '',
@@ -461,12 +462,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAgencyDeals(prev => prev.map(d => d.id === id ? { ...d, status } : d));
   };
 
-  const loginAdmin = (usernameInput: string, passwordInput: string) => {
-    const validUser = usernameInput.trim().toLowerCase() === 'maquinas';
+  const loginAdmin = (usernameInput: string, passwordInput: string): boolean => {
+    const cleanUser = usernameInput.trim().toLowerCase();
+    const validUser = cleanUser === 'maquinas' || cleanUser === 'maquinas@agromaquinas.com.br' || cleanUser === 'admin';
     const validPass = passwordInput === adminPassword || passwordInput === 'maquinas26' || passwordInput === 'admin123';
 
     if (validUser && validPass) {
       setIsAdminLoggedIn(true);
+      if (isSupabaseConfigured && supabase) {
+        const email = cleanUser.includes('@') ? cleanUser : 'maquinas@agromaquinas.com.br';
+        supabase.auth.signInWithPassword({ email, password: passwordInput }).catch(err => {
+          console.warn('Supabase auth attempt notice:', err);
+        });
+      }
       return true;
     }
     return false;
@@ -474,6 +482,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logoutAdmin = () => {
     setIsAdminLoggedIn(false);
+    if (isSupabaseConfigured && supabase) {
+      supabase.auth.signOut().catch(() => {});
+    }
   };
 
   const updateAdminPassword = (newPassword: string) => {

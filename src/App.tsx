@@ -65,6 +65,24 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Handle route protection & redirects for /admin, /admin/login, and /admin/dashboard
+  useEffect(() => {
+    if (currentPath.startsWith('/admin')) {
+      if (!isAdminLoggedIn) {
+        if (currentPath !== '/admin/login') {
+          window.history.replaceState({}, '', '/admin/login');
+          setCurrentPath('/admin/login');
+        }
+      } else {
+        if (currentPath === '/admin' || currentPath === '/admin/' || currentPath === '/admin/login') {
+          window.history.replaceState({}, '', '/admin/dashboard');
+          setCurrentPath('/admin/dashboard');
+          setAdminTab('dashboard');
+        }
+      }
+    }
+  }, [currentPath, isAdminLoggedIn]);
+
   const navigateTo = (path: string, machineId?: string) => {
     setCurrentPath(path);
     if (machineId) {
@@ -79,7 +97,7 @@ export const App: React.FC = () => {
 
   const handleAdminTabChange = (tabId: string) => {
     setAdminTab(tabId);
-    let targetPath = '/admin';
+    let targetPath = '/admin/dashboard';
     if (tabId === 'machines') targetPath = '/admin/machines';
     if (tabId === 'advertisers') targetPath = '/admin/advertisers';
     if (tabId === 'interests') targetPath = '/admin/interests';
@@ -103,7 +121,7 @@ export const App: React.FC = () => {
   // RENDER ADMIN PANEL
   if (isAdminRoute) {
     if (!isAdminLoggedIn) {
-      return <AdminLoginPage onSuccess={() => navigateTo('/admin')} />;
+      return <AdminLoginPage onSuccess={() => navigateTo('/admin/dashboard')} />;
     }
 
     return (
